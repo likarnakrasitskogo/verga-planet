@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Табло реєстратури - Хмельницька ЦЛ</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            background: #d9e9fa url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><path d="M40 10 L70 27 L70 53 L40 70 L10 53 L10 27 Z" fill="%23ffffff" fill-opacity="0.1"/><circle cx="40" cy="40" r="8" fill="%23a0c0d0" fill-opacity="0.1"/></svg>');
+            min-height: 100vh;
+            padding: 8px 15px;
+        }
+        .header {
+            background: white;
+            color: #002856;
+            padding: 8px 15px;
+            border-radius: 20px;
+            margin-bottom: 8px;
+            box-shadow: 0 5px 10px rgba(0,45,80,0.1);
+            border-left: 6px solid #1e6f9f;
+        }
+        .header h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 2px;
+        }
+        .hotline-bar {
+            background: #002856;
+            color: white;
+            padding: 3px 12px;
+            border-radius: 25px;
+            display: inline-block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .hotline-bar span {
+            font-weight: 300;
+            margin: 0 5px;
+            color: #ffd966;
+        }
+        .control-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            background: white;
+            padding: 4px 12px;
+            border-radius: 30px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+        }
+        .clear-btn {
+            background: #a1232b;
+            color: white;
+            border: none;
+            padding: 4px 15px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 2px 0 #561218;
+            transition: 0.1s;
+        }
+        .clear-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 0 0 #561218;
+        }
+        .last-update {
+            background: #eef3f9;
+            padding: 4px 12px;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #00356b;
+        }
+        .table-wrapper {
+            background: white;
+            border-radius: 20px;
+            padding: 8px;
+            border: 2px solid #b0c8e0;
+            box-shadow: 0 5px 15px rgba(0, 40, 70, 0.2);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        th {
+            background: #003b6a;
+            color: white;
+            font-weight: 700;
+            padding: 8px 3px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        td {
+            padding: 6px 3px;
+            border-bottom: 1px solid #cbd6e4;
+            color: #002856;
+            transition: background-color 0.2s;
+        }
+        /* Великий жирний номер направлення */
+        .referral-number {
+            font-size: 24px;
+            font-weight: 900;
+            display: block;
+            text-align: center;
+            line-height: 1;
+        }
+        
+        /* Кольори статусів для рядків */
+        .status-row-cherga {
+            background-color: #ffdb7c !important; /* жовтий */
+        }
+        .status-row-zaproshuietsia {
+            background-color: #00ff00 !important; /* яскраво-зелений */
+            animation: blink-super 0.8s infinite;
+        }
+        .status-row-pryiom {
+            background-color: #4d9eff !important; /* синій */
+        }
+        .status-row-zaversheno {
+            background-color: #b0b0b0 !important; /* сірий */
+        }
+        
+        @keyframes blink-super {
+            0% { background-color: #00ff00; }
+            50% { background-color: #ffffff; filter: brightness(1.5); }
+            100% { background-color: #00ff00; }
+        }
+        
+        /* Стилі для випадаючого списку */
+        .status-select {
+            padding: 4px 6px;
+            border-radius: 20px;
+            border: 2px solid #2a4e6e;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            width: 140px; /* ширше, щоб влазило "Запрошується" */
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        /* Кольори для самого селекту */
+        .status-select.cherga {
+            background-color: #ffdb7c;
+            border-color: #b38633;
+        }
+        .status-select.zaproshuietsia {
+            background-color: #00ff00;
+            border-color: #1e7e1e;
+            animation: blink-select 0.8s infinite;
+        }
+        .status-select.pryiom {
+            background-color: #4d9eff;
+            border-color: #0047ab;
+        }
+        .status-select.zaversheno {
+            background-color: #b0b0b0;
+            border-color: #505050;
+        }
+        
+        @keyframes blink-select {
+            0% { background-color: #00ff00; }
+            50% { background-color: #adffad; }
+            100% { background-color: #00ff00; }
+        }
+        
+        .empty-message {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.2rem;
+            color: #6b8ba0;
+        }
+        
+        td:last-child {
+            text-align: center;
+        }
+        
+        tr {
+            height: 46px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Хмельницька центральна лікарня<br>імені Володимира Красицького</h1>
+        <div class="hotline-bar">
+            Гаряча лінія: <span>068 251 5549</span> | <span>097 110 8286</span> | <span>067 118 2301</span>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <button class="clear-btn" id="clearAllBtn">✖ ОЧИСТИТИ</button>
+        <div class="last-update" id="updateTimestamp">оновлено: --:--:--</div>
+    </div>
+
+    <div class="table-wrapper">
+        <table id="queueTable">
+            <thead>
+                <tr>
+                    <th>№ напр.</th>
+                    <th>ПІБ пацієнта</th>
+                    <th>Вік</th>
+                    <th>Лікар / Відділення</th>
+                    <th>Направив</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr><td colspan="6" class="empty-message">Черга порожня</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const tableBody = document.getElementById('tableBody');
+        const updateSpan = document.getElementById('updateTimestamp');
+
+        // Зберігаємо таймери для кожного запису
+        const deletionTimers = {};
+
+        function getRowClass(status) {
+            switch(status) {
+                case 'Черга': return 'status-row-cherga';
+                case 'Запрошується': return 'status-row-zaproshuietsia';
+                case 'Прийом триває': return 'status-row-pryiom';
+                case 'Завершено': return 'status-row-zaversheno';
+                default: return '';
+            }
+        }
+
+        function getSelectClass(status) {
+            switch(status) {
+                case 'Черга': return 'cherga';
+                case 'Запрошується': return 'zaproshuietsia';
+                case 'Прийом триває': return 'pryiom';
+                case 'Завершено': return 'zaversheno';
+                default: return '';
+            }
+        }
+
+        // Видалення конкретного запису
+        function deletePatient(patientId) {
+            let patients = JSON.parse(localStorage.getItem('hospitalQueue')) || [];
+            patients = patients.filter(p => p.id !== patientId);
+            localStorage.setItem('hospitalQueue', JSON.stringify(patients));
+            
+            if (deletionTimers[patientId]) {
+                clearTimeout(deletionTimers[patientId]);
+                delete deletionTimers[patientId];
+            }
+            
+            renderQueue();
+        }
+
+        // Запуск таймера на 13 секунд
+        function scheduleDeletion(patientId) {
+            if (deletionTimers[patientId]) {
+                clearTimeout(deletionTimers[patientId]);
+            }
+            
+            deletionTimers[patientId] = setTimeout(() => {
+                deletePatient(patientId);
+            }, 13000);
+        }
+
+        function renderQueue() {
+            const patients = JSON.parse(localStorage.getItem('hospitalQueue')) || [];
+            
+            if (patients.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="empty-message">Черга порожня</td></tr>`;
+            } else {
+                let html = '';
+                patients.sort((a, b) => b.id - a.id);
+                
+                patients.forEach(patient => {
+                    const rowClass = getRowClass(patient.status);
+                    const selectClass = getSelectClass(patient.status);
+                    
+                    html += `<tr class="${rowClass}" data-id="${patient.id}">
+                        <td><span class="referral-number">${patient.referralNumber}</span></td>
+                        <td><strong>${patient.fullName}</strong></td>
+                        <td>${patient.age}</td>
+                        <td>${patient.doctor}</td>
+                        <td>${patient.referrer}</td>
+                        <td>
+                            <select class="status-select ${selectClass}" data-id="${patient.id}">
+                                <option value="Черга" ${patient.status === 'Черга' ? 'selected' : ''}>Черга</option>
+                                <option value="Запрошується" ${patient.status === 'Запрошується' ? 'selected' : ''}>Запрошується</option>
+                                <option value="Прийом триває" ${patient.status === 'Прийом триває' ? 'selected' : ''}>Прийом триває</option>
+                                <option value="Завершено" ${patient.status === 'Завершено' ? 'selected' : ''}>Завершено</option>
+                            </select>
+                        </td>
+                    </tr>`;
+                });
+                tableBody.innerHTML = html;
+                
+                document.querySelectorAll('.status-select').forEach(select => {
+                    select.addEventListener('change', function(e) {
+                        const newStatus = this.value;
+                        const patientId = Number(this.dataset.id);
+                        
+                        this.className = `status-select ${getSelectClass(newStatus)}`;
+                        
+                        let patients = JSON.parse(localStorage.getItem('hospitalQueue')) || [];
+                        const patientIndex = patients.findIndex(p => p.id === patientId);
+                        if (patientIndex !== -1) {
+                            const oldStatus = patients[patientIndex].status;
+                            patients[patientIndex].status = newStatus;
+                            localStorage.setItem('hospitalQueue', JSON.stringify(patients));
+                            
+                            const row = this.closest('tr');
+                            row.className = getRowClass(newStatus);
+                            
+                            if (newStatus === 'Завершено') {
+                                scheduleDeletion(patientId);
+                            } else if (oldStatus === 'Завершено' && deletionTimers[patientId]) {
+                                clearTimeout(deletionTimers[patientId]);
+                                delete deletionTimers[patientId];
+                            }
+                        }
+                    });
+                });
+                
+                patients.forEach(patient => {
+                    if (patient.status === 'Завершено' && !deletionTimers[patient.id]) {
+                        scheduleDeletion(patient.id);
+                    }
+                });
+            }
+            updateSpan.textContent = `оновлено: ${new Date().toLocaleTimeString('uk-UA')}`;
+        }
+
+        document.getElementById('clearAllBtn').addEventListener('click', function() {
+            if (confirm('Ви дійсно хочете повністю очистити табло?')) {
+                Object.values(deletionTimers).forEach(timer => clearTimeout(timer));
+                Object.keys(deletionTimers).forEach(key => delete deletionTimers[key]);
+                
+                localStorage.removeItem('hospitalQueue');
+                renderQueue();
+            }
+        });
+
+        renderQueue();
+        setInterval(renderQueue, 5000);
+    </script>
+</body>
+</html>
